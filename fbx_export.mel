@@ -1,0 +1,154 @@
+global proc Exporter( ) {
+    
+    global string $path;
+    // global string $prefix;
+    // global string $suffix;
+                
+    global string $pathTextField;
+    $path = `textField -q -tx $pathTextField`;
+    string $realPath = ($path+"/");
+    
+    // global string $prefixTextField;
+    // $prefix = `textField -q -tx $prefixTextField`;
+    
+    // global string $suffixTextField;
+    // $suffix = `textField -q -tx $suffixTextField`;
+    
+    string $selection[] = `ls -sl`;     
+    
+    int $sizeSel = size($selection);  
+    if ($sizeSel == 0){
+        inViewMessage;
+        inViewMessage -smg "Nothing is selected, you must select an object" -fts 15 -pos midCenterTop -bkc 0x00000000 -fade;
+        // warning("Nothing is selected, you must select an object");
+        // confirmDialog -title "Error" -message "Nothing is selected, you must select an object" -button "OK" -defaultButton "OK" -cancelButton "CANCEL";
+    }
+    
+    if ($path != "/"){     
+        for ($object in $selection){                  
+            select -r $object;             
+            // file -force -options "v=0;" -typ "FBX export" -pr -es ($realPath + $prefix + $object + $suffix + ".fbx"); 
+            file -force -options "v=0;" -typ "FBX export" -pr -es ($realPath + $object + ".fbx"); 
+            inViewMessage;
+            inViewMessage -smg ($object + " exported succesfully") -fts 15 -pos midCenterTop -bkc 0x00000000 -fade;
+        }   
+    }
+    else{
+        inViewMessage;
+        inViewMessage -smg ("please choose an output directory") -fts 15 -pos midCenterTop -bkc 0x00000000 -fade;
+    }    
+};
+
+// choose folder via explorer
+
+global proc chooseFolder (){
+    
+    global string $path;
+   
+   	string $chosenFolder[] = `fileDialog2 -okc "Select folder" -fm 3`;
+	
+	global string $pathTextField;
+	
+	$path = $chosenFolder[0];
+	
+	textField -edit -text $chosenFolder[0] $pathTextField;
+	
+}
+global proc DelHistory(){
+    string $selection[] = `ls -selection -long`;
+    for ( $object in $selection ) {
+    select($object);
+    DeleteHistory;
+    inViewMessage;
+    inViewMessage -smg ($object + " Delete History") -fts 15 -pos midCenterTop -bkc 0x00000000 -fade;
+  }
+}
+
+global proc FreezeTransform(){
+    string $selection[] = `ls -selection -long`;
+    for ( $object in $selection ) {
+    select($object);
+    FreezeTransformations;
+    makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;
+    inViewMessage;
+    inViewMessage -smg ($object + " Freeze Transform") -fts 15 -pos midCenterTop -bkc 0x00000000 -fade;
+  }
+}
+
+global proc DelUnusedNodes(){
+    string $selection[] = `ls -selection -long`;
+    for ( $object in $selection ) {
+    select($object);
+    MLdeleteUnused;
+    inViewMessage;
+    inViewMessage -smg ($object + " Delete Unused Nodes") -fts 15 -pos midCenterTop -bkc 0x00000000 -fade;
+  }
+}
+
+global proc namespaceremove(){
+    namespace -set ":";
+    while (size (`namespaceInfo -lon`) > size(`file -q -r -shn`) + 2){
+        for ($nsReach in `namespaceInfo -lon`){
+            if ($nsReach == "UI" || $nsReach =="shared" || (catchQuiet (`namespace -f -mv $nsReach ":"`))==1){
+                continue;
+            }
+            else{
+                namespace -rm $nsReach;
+            }    
+        }
+    }
+}
+
+// User Interface
+global proc OBJExporterUI( ) {
+        
+    // Window stuff
+    
+    global string $path;
+    // global string $prefix;
+    // global string $suffix;
+    
+    if (`window -exists FBXexporterWindow`) deleteUI FBXexporterWindow;
+    window -t "Simple FBX Exporter" -minimizeButton 1 -maximizeButton 1 -resizeToFitChildren 1 -wh 400 350 FBXexporterWindow;
+    if (`windowPref -exists FBXexporterWindow`) windowPref -remove FBXexporterWindow;
+        
+        columnLayout -columnAttach "both" 5 -rowSpacing 8 -columnWidth 400 -adjustableColumn 1;
+        
+        text -label "" -h 2;
+                
+        rowLayout -adj 1 -numberOfColumns 2 -width 400;	
+        	global string $pathTextField;
+            $pathTextField = `textField -width 365 -h 20 -text $path`;
+        	iconTextButton -style "iconAndTextVertical" -align "right" -command "chooseFolder" -image1 "fileOpen.xpm" -height 20;
+    	setParent ..;
+                    
+        // separator-style "in" ;
+          
+        // columnLayout -adj 1 -rowSpacing 5;
+        // 	text -label "Prefix :" -align "left";
+        //     global string $prefixTextField ;
+        //     $prefixTextField = `textField -w 145 -h 20 -tx $prefix`;
+        //     text -label "Suffix :" -align "left";
+        //     global string $suffixTextField;
+        //     $suffixTextField = `textField -w 145 -h 20 -tx $suffix`;
+        // setParent ..;
+        
+        separator-style "in" ;
+        
+        columnLayout -adj 1 -rowSpacing 5;
+        button -label "FreezeTransform" -h 30 -c "FreezeTransform()";
+        button -label "Delete History" -h 30 -c "DelHistory()";
+        button -label "Delete Unused Nodes" -h 30 -c "DelUnusedNodes()";
+        button -label "Remove Namespace" -h 30 -c "namespaceremove()";
+        setParent ..;
+        
+        separator-style "in" ;
+          
+        button -bgc 0.0 0.5 0.5 -label "EXPORT" -command "Exporter" -height 30;
+    
+    showWindow FBXexporterWindow;
+};
+
+// Run the main procedure
+     
+OBJExporterUI;
