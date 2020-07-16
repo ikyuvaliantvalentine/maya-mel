@@ -1,5 +1,41 @@
+global proc mayaexporter(){
+    global string $exportpath;
+    global string $exportpathTextField;
+    $exportpath = `textField -q -tx $exportpathTextField`;
+    string $exportrealPath = ($exportpath+"/");
+
+    global string $path;
+                
+    global string $pathTextField;
+    $path = `textField -q -tx $pathTextField`;
+    string $realPath = ($path+"/");
+
+    // string $fbxpath = "D:/Submission/";
+    string $fbxpath = $realPath;
+    string $filelist[] = `getFileList -folder $fbxpath -filespec "*.fbx"`;
+    string $newFileList[];
+    int $cnt; 
+    string $parts[];
+
+    for ($i=0;$i<size($filelist);$i++){
+
+        $cnt = `tokenize $filelist[$i] "." $parts`; //strip out "." from fbx suffix
+        $newFileList[$i] = $parts[0];
+
+        FBXImport -f ($fbxpath + $filelist[$i]) -t; //open the fbx file
+        file -rename ($exportpath + "/" + ($newFileList[$i]+".ma")); //rename to .ma
+        
+        file -f -save -options "v=0" -type "mayaAscii";  //save the .ma
+
+        string $confirmUI = `confirmDialog -title "Convert FBX"
+        -message ($fbxpath + $filelist[$i] + "  has been converted to   " + $exportpath + "/" + $newFileList[$i]+".ma")
+        -button "OK"`;
+
+        file -f -new; //create a new scene
+    }
+}
+
 global proc Exporter( ) {
-    
     global string $path;
     // global string $prefix;
     // global string $suffix;
@@ -40,20 +76,23 @@ global proc Exporter( ) {
 };
 
 // choose folder via explorer
-
 global proc chooseFolder (){
-    
     global string $path;
-   
    	string $chosenFolder[] = `fileDialog2 -okc "Select folder" -fm 3`;
-	
 	global string $pathTextField;
-	
 	$path = $chosenFolder[0];
-	
 	textField -edit -text $chosenFolder[0] $pathTextField;
-	
 }
+
+global proc exportmayaFolder(){
+    global string $exportpath;
+    string $chosenexportFolder[] = `fileDialog2 -okc "Select folder" -fm 3`;
+    global string $exportpathTextField;
+    $exportpath = $chosenexportFolder[0];
+    textField -edit -text $chosenexportFolder[0] $exportpathTextField;
+}
+
+
 global proc DelHistory(){
     string $selection[] = `ls -selection -long`;
     for ( $object in $selection ) {
@@ -105,6 +144,7 @@ global proc OBJExporterUI( ) {
     // Window stuff
     
     global string $path;
+    global string $exportpath;
     // global string $prefix;
     // global string $suffix;
     
@@ -120,6 +160,12 @@ global proc OBJExporterUI( ) {
         	global string $pathTextField;
             $pathTextField = `textField -width 365 -h 20 -text $path`;
         	iconTextButton -style "iconAndTextVertical" -align "right" -command "chooseFolder" -image1 "fileOpen.xpm" -height 20;
+    	setParent ..;
+
+        rowLayout -adj 1 -numberOfColumns 2 -width 400;	
+        	global string $exportpathTextField;
+            $exportpathTextField = `textField -width 365 -h 20 -text $exportpath`;
+        	iconTextButton -style "iconAndTextVertical" -align "right" -command "exportmayaFolder" -image1 "fileOpen.xpm" -height 20;
     	setParent ..;
                     
         // separator-style "in" ;
@@ -143,8 +189,10 @@ global proc OBJExporterUI( ) {
         setParent ..;
         
         separator-style "in" ;
-          
-        button -bgc 0.0 0.5 0.5 -label "EXPORT" -command "Exporter" -height 30;
+        
+        rowLayout -adj 1 -numberOfColumns 2 -width 400;	
+        button -bgc 0.0 0.5 0.5 -label "EXPORT" -command "Exporter" -width 30 -height 30;
+        button -bgc 0.2 0.8 0.5 -label "BATCH EXPORT MAYA" -command "mayaexporter" -width 150 -height 30;
     
     showWindow FBXexporterWindow;
 };
