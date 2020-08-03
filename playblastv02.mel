@@ -1,0 +1,251 @@
+global proc PlayblasterNewSettings () {
+    
+    if (`objExists "Playblaster_settings"`) {
+    delete Playblaster_settings;
+    }
+    
+    group -empty -name "Playblaster_settings";
+    
+    addAttr -longName "customFileChk" -attributeType bool -keyable 0;
+    addAttr -longName "customFileName" -dataType "string" -keyable 0;
+    addAttr -longName "customPathChk" -attributeType bool -keyable 0;
+    addAttr -longName "customPathName" -dataType "string" -keyable 0;
+    addAttr -longName "resolution" -attributeType "long" -keyable 0;
+    setAttr "Playblaster_settings.resolution" 1;
+      
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.tx";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.ty";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.tz";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.rx";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.ry";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.rz";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.sx";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.sy";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.sz";
+    setAttr -lock true -keyable false -channelBox false "Playblaster_settings.v";
+}
+    
+global proc PlayblasterSyncUISettings () {
+
+    checkBox -e -value (`getAttr "Playblaster_settings.customFileChk"`) customNameChkBox;
+    textField -e -text Playblaster_settings.customFileName customNameTxt;
+    
+    checkBox -e -value (`getAttr "Playblaster_settings.customPathChk"`) customPathChkBox;
+    textField -e -text Playblaster_settings.customPathName customPathTxt;
+    radioButtonGrp -e -select (`getAttr "Playblaster_settings.resolution"`) resolutionBtns;
+    
+    connectControl customNameChkBox Playblaster_settings.customFileChk;
+    connectControl customPathChkBox Playblaster_settings.customPathChk;
+    connectControl customNameTxt Playblaster_settings.customFileName;
+    connectControl customPathTxt Playblaster_settings.customPathName;
+    connectControl resolutionBtns Playblaster_settings.resolution;
+}
+
+global proc PlayblasterSyncNodeSettings () {
+
+    setAttr "Playblaster_settings.customFileChk" `checkBox -q -value customNameChkBox`;
+    setAttr "Playblaster_settings.customPathChk" `checkBox -q -value customPathChkBox`;
+    setAttr -type "string" "Playblaster_settings.customFileName" `textField -q -text customNameTxt`;
+    setAttr -type "string" "Playblaster_settings.customPathName" `textField -q -text customPathTxt`;
+    setAttr "Playblaster_settings.resolution" `radioButtonGrp -q -select resolutionBtns`;
+    
+    connectControl customNameChkBox Playblaster_settings.customFileChk;
+    connectControl customPathChkBox Playblaster_settings.customPathChk;
+    connectControl customNameTxt Playblaster_settings.customFileName;
+    connectControl customPathTxt Playblaster_settings.customPathName;
+    connectControl resolutionBtns Playblaster_settings.resolution;
+}
+
+global proc PlayblasterGetFileName () {
+        
+    if (`getAttr "Playblaster_settings.customFileChk"` == 1) {
+        global string $lhPlayblasterFileName;
+        $lhPlayblasterFileName = (`getAttr "Playblaster_settings.customFileName"`);
+    }
+    
+    else {
+        string $fullFileName = `file -q -sceneName -shortName`;
+        global string $lhPlayblasterFileName;
+        $lhPlayblasterFileName = (basename ($fullFileName, ".ma") + ".mov");
+    }
+}
+
+
+global proc lhPlayblasterGetPathName () {
+    
+    if (`getAttr "Playblaster_settings.customPathChk"` == 1) {
+        global string $lhPlayblasterPathName;
+        $lhPlayblasterPathName = (`getAttr "Playblaster_settings.customPathName"`);
+    }
+    
+    else {
+        global string $lhPlayblasterPathName;
+        $lhPlayblasterPathName = "movies/";
+    }    
+}
+
+global proc PlayblasterGetRes () {
+    
+    if (`getAttr "Playblaster_settings.resolution"` == 1) {
+    global int $lhPlayblasterRes[];
+    $lhPlayblasterRes = {1920, 1080};
+    }
+    
+    if (`getAttr "Playblaster_settings.resolution"` == 2) {
+    global int $lhPlayblasterRes[];
+    $lhPlayblasterRes = {1280, 720};
+    }
+        
+}
+
+// END SETTINGS PROCEDURES
+
+// BEGIN MAIN UI PROCEDURE
+
+global proc lhPlayblaster () {
+
+if (`window -q -exists lhPlayblasterWindow`){
+    deleteUI -window lhPlayblasterWindow;
+    }  
+if (`window -q -exists lhPlayblasterHotkeyWindow`){
+    deleteUI -window lhPlayblasterHotkeyWindow;
+}
+if (`windowPref -q -exists lhPlayblasterHotkeyWindow`){
+    windowPref -remove lhPlayblasterHotkeyWindow;
+} 
+if (`window -q -exists lhPlayblasterInstructionsWindow`){
+    deleteUI -window lhPlayblasterInstructionsWindow;
+}
+if (`windowPref -q -exists lhPlayblasterInstructionsWindow`){
+    windowPref -remove lhPlayblasterInstructionsWindow;
+}
+if (`window -q -exists lhPlayblasterAboutWindow`){
+    deleteUI -window lhPlayblasterAboutWindow;
+}
+if (`windowPref -q -exists lhPlayblasterAboutWindow`){
+    windowPref -remove lhPlayblasterAboutWindow;
+}  
+  
+window -sizeable 1 -menuBar 1 -title "Playblast" lhPlayblasterWindow;
+    
+rowColumnLayout -rowAttach 1 top 4;
+
+frameLayout -l "Custom Name / Path" -cll true -cl false ;
+    rowLayout -numberOfColumns 3 -columnWidth3 120 120 120
+    -columnAlign3 "center" "center" "center";
+        
+    checkBox -value 0 -label "Custom File Name:" customNameChkBox;
+    textField -width 330 -enable 0 customNameTxt;  
+    //button -label "Browse" -command lhpbFileNameBrowser; 
+    setParent..;
+    
+    rowLayout -numberOfColumns 3 -columnWidth3 120 120 120
+    -columnAlign3 "center" "center" "center";
+        
+    checkBox -value 0  -label "Custom File Path:" customPathChkBox;
+    textField  -width 330 -enable 0 customPathTxt;
+    button -label "Browse" -command lhpbPathNameBrowser;
+    
+    setParent..;
+setParent..;
+    
+    
+frameLayout -l "Custom Resolution" -cll true -cl false ;
+    rowLayout -numberOfColumns 2 -columnWidth3 120 120 120
+   -columnAlign3 "center" "center" "center";
+    radioButtonGrp -numberOfRadioButtons 2 -select 1 -labelArray2 "1920x1080" "1280x720" -data1 1 -data2 2 resolutionBtns;
+    setParent..;
+setParent..;
+        
+rowColumnLayout -numberOfColumns 1 -rowSpacing 1 10 -columnOffset 1 left 25 -rowAttach 1 top 10;
+    button -label "Playblast Now" -height 40 -width 480 -bgc .5 .5 0 -command lhpbPlayblastNow;
+    button -label "Reset/Clear Settings" -width 480 -command lhpbResetVars; 
+    setParent..;
+    
+if (!`objExists "Playblaster_settings"`) {
+    
+    PlayblasterNewSettings;
+}
+
+PlayblasterSyncUISettings; 
+
+select -cl;  
+
+    
+showWindow "lhPlayblasterWindow";
+
+}
+
+lhPlayblaster;
+
+// END MAIN UI PROCEDURE
+
+// BEGIN BUTTON-PRESS PROCEDURES
+
+global proc lhpbFileNameBrowser () {
+
+    string $fullFilePath[] = `fileDialog2 -fileMode 0 -caption "Browse for Playblast File Name" -fileFilter "*.mov"`;
+    string $newFileName = `basenameEx ($fullFilePath[0])`;
+    textField -edit -text $newFileName customNameTxt;
+    checkBox -edit -value 1 customNameChkBox;
+    PlayblasterSyncNodeSettings;
+}
+
+global proc lhpbPathNameBrowser () {
+    
+    string $filePath[] = `fileDialog2 -fileMode 2 -caption "Browse for Playblast File Path"`;
+    textField -edit -text ($filePath[0] + "/") customPathTxt;
+    checkBox -edit -value 1 customPathChkBox;
+    PlayblasterSyncNodeSettings;
+}
+
+global proc lhpbResetVars () {
+
+    PlayblasterNewSettings;
+    PlayblasterSyncUISettings;
+    select -cl; 
+  
+}
+
+global proc lhpbCloseHotkeyWindow () {
+    deleteUI -window lhPlayblasterHotkeyWindow;
+}
+
+global proc lhpbShowInstructions () {
+    
+    window -widthHeight 400 320 -sizeable 0 -title "Instructions" lhPlayblasterInstructionsWindow;
+    rowColumnLayout -columnOffset 1 left 25 -rowOffset 1 both 10 -rowSpacing 1 10;
+    text -align "center" -label "How to Use lhPlayblaster";
+    text -align "left" -wordWrap 1 -width 350 -label "\"Playblast Now\" -- by default, will create a playblast with the same name as your file, and save it in the default movies folder wherever your project is set to. If you'd like to change either of those defaults, check the box next to \"Custom File Name\" or \"Custom File Path\", then enter your desired file and/or path name, or use the \"Browse\" buttons.";
+    text -align "left" -wordWrap 1 -width 350 -label "\"Reset/Clear Settings\" -- clears the custom file and path data. The settings data appears as a node in your scene called \"Playblaster_settings\", which can be copied into other files if you want to keep using the same file name or path in other maya scenes.";
+    text -align "left" -wordWrap 1 -width 350 -label "\"Get Hotkey Code\" -- displays a bit of MEL code that can be assigned to a hotkey or shelf item. Basically does the same thing as hitting \"Playblast Now\". Once you assign the MEL code to a hotkey or shelf item, it can be run even with the lhPlayblaster window closed.";
+    showWindow "lhPlayblasterInstructionsWindow";
+}
+
+global proc lhpbPlayblastNow () {
+    
+    
+    if (!`objExists "Playblaster_settings"`) {
+        
+        error "No Playblaster settings found. Run \"lhPlayblaster;\", or copy the Playblaster_settings node from another file.";
+    }
+    
+    global string $lhPlayblasterFileName;
+    global string $lhPlayblasterPathName;
+    global int $lhPlayblasterRes[];
+    
+    PlayblasterGetFileName;
+    lhPlayblasterGetPathName;
+    PlayblasterGetRes;
+    
+   
+    global string $gPlayBackSlider;
+    $lhPlayblasterAudio = `timeControl -q -s $gPlayBackSlider`;
+
+    print ("Creating PLAYBLAST! " + $lhPlayblasterFileName + "    Saved in: " + $lhPlayblasterPathName);
+
+    playblast  -format qt -sound $lhPlayblasterAudio -filename ($lhPlayblasterPathName + $lhPlayblasterFileName) -sequenceTime 0 -clearCache 1 -forceOverwrite -viewer 1 -showOrnaments 1 -offScreen  -fp 4 -percent 100 -compression "H.264" -quality 100 -widthHeight ($lhPlayblasterRes[0]) ($lhPlayblasterRes[1]);
+
+    } 
+
+
