@@ -1,0 +1,76 @@
+//--------------------------------------------------------------------------
+//
+// ScriptName : AriLayerSwitch
+// Contents   : 特定の2レイヤの表示非表示を1ボタンで交互に行います。
+// Author     : Ari
+// URL        : http://cgjishu.net/
+// Since      : 2017/02
+// LastUpdate : 
+//
+//--------------------------------------------------------------------------
+
+
+global proc AriLayerSwitch_CreateLayerAB(string $layerAB){
+	print($layerAB);
+	int $checkName=0;
+	string $layerName[]=`ls -type displayLayer`;
+	for($layer in $layerName){
+		if($layer == $layerAB) $checkName=1;
+	}
+	if($checkName)editDisplayLayerMembers -noRecurse $layerAB `ls -sl`;
+	else createDisplayLayer -noRecurse -name $layerAB ;
+	return;
+}
+global proc AriLayerSwitch_DeleteLayerAB(){
+	
+	
+	string $layerName;
+	$layerName = "switchLayerA";
+	if( `objExists $layerName` ) delete $layerName;
+	$layerName = "switchLayerB";
+	if( `objExists $layerName` ) delete $layerName;
+}
+global proc AriLayerSwitch_Switch(){
+	undoInfo -swf 0;
+	string $layerName;
+	int $visible;
+	$layerNameA = "switchLayerA";
+	if( `objExists $layerNameA` ) {
+		$visible = !`getAttr ($layerNameA+".visibility")`;
+		setAttr ($layerNameA+".visibility") $visible;
+	}
+	$layerNameB = "switchLayerB";
+	if( `objExists $layerNameB` ) {
+		if( `objExists $layerNameA` ) {
+			$visible = !`getAttr ($layerNameA+".visibility")`;
+		}
+		else $visible = !`getAttr ($layerNameB+".visibility")`;
+		setAttr ($layerNameB+".visibility") $visible;
+	}
+	undoInfo -swf 1;
+}
+global proc AriLayerSwitch(){
+	if((`window -ex AriLayerSwitch`)==true)deleteUI AriLayerSwitch;
+	window -title "AriLayerSwitch"  -w 300 -h 300 AriLayerSwitch;
+	string $form =`formLayout`;
+	string $button1=`button -label "LayerA <-> LayerB"-command "AriLayerSwitch_Switch()"`;
+	string $button2=`button -label "Add LayerA" -h 32 -command "AriLayerSwitch_CreateLayerAB(\"switchLayerA\")"`;
+	string $button3=`button -label "Add LayerB" -h 32 -command "AriLayerSwitch_CreateLayerAB(\"switchLayerB\")"`;
+	string $button4=`button -label "Delete LayerAB"-command "AriLayerSwitch_DeleteLayerAB()"`;
+	formLayout -edit
+		-af $button4 "left"   0
+		-af $button4 "bottom" 0
+		-af $button4 "right"  0
+		-af $button2 "left"   0
+		-ac $button2 "bottom" 0 $button4
+		-ap $button2 "right" 0 50
+		-ap $button3 "left"   0 50
+		-ac $button3 "bottom" 0 $button4
+		-af $button3 "right" 0 
+		-af $button1 "top"   0
+		-af $button1 "left"   0
+		-ac $button1 "bottom" 0 $button3
+		-af $button1 "right" 0
+		$form;
+	showWindow;
+}
