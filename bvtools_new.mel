@@ -1,0 +1,1296 @@
+global proc bvtoolsUI(){
+    columnLayout -adjustableColumn true;
+        header;
+        tools;
+        getkentool;   
+}
+
+global proc bvtoolsopener_floatChangeCommand(){
+	string $dockArea = `dockControl -q -area bvtoolsOpenerDock`;
+	int    $dockFloating = `dockControl -q -fl bvtoolsOpenerDock`;
+	int    $width   = `dockControl -q -w bvtoolsOpenerDock`;
+	int    $height  = `dockControl -q -h bvtoolsOpenerDock`;
+	optionVar -stringValue "bvtoolsOpener_dockArea"     $dockArea;
+	optionVar -intValue    "bvtoolsOpener_dockFloating" $dockFloating;
+}
+
+global proc bvtools(){
+    int $wscexTrue =`exists("workspaceControl")`;
+    if($wscexTrue){
+		int    $wscWidth   = 100;
+		int    $wscHeight  = 200;
+		if((`workspaceControl -ex bvtoolsWSC`)==true){
+			workspaceControl -e -uiScript "bvtoolsUI();" bvtoolsWSC;
+			deleteUI bvtoolsWSC;
+		}
+		workspaceControl
+			-label  "BV Toolkit"
+			-retain false    
+			-floating true
+			-minimumWidth $wscWidth
+			-initialWidth $wscWidth
+			-uiScript "bvtoolsUI();"
+			bvtoolsWSC;			
+	}
+	else{
+	    if((`window -ex bvtoolsW`)==true)deleteUI bvtoolsW;
+		string $window = `window -title "BV Toolkit"  -w 100 -h 400  bvtoolsW`;
+		columnLayout;
+		string $mainUI = bvtoolsUI();
+		string $dockArea     = "left";
+		int    $dockFloating = true;
+		int    $dockWidth   = 400;
+		int    $dockHeight  = 400;
+		if(`optionVar -exists "bvtoolsOpener_dockArea"`)     $dockArea     = `optionVar -q "bvtoolsOpener_dockArea"`;
+		if(`optionVar -exists "bvtoolsOpener_dockFloating"`) $dockFloating = `optionVar -q "bvtoolsOpener_dockFloating"`;
+		if((`dockControl -ex  bvtoolsOpenerDock`)==true)deleteUI bvtoolsOpenerDock;
+		dockControl
+			-content $mainUI
+			-l "bvtoolsOpener"
+			-area $dockArea
+			-fl $dockFloating
+			-fcc "bvtoolsopener_floatChangeCommand()"
+			-w $dockWidth
+			-h $dockHeight
+			-allowedArea "left"
+			-allowedArea "right"
+		bvtoolsOpenerDock;
+		refresh;
+		dockControl -e -raise bvtoolsOpenerDock;
+		if((`window -ex bvtoolsW`)==true)deleteUI bvtoolsW;
+	}
+		
+}
+	                                 
+proc header() {
+    //Header
+    columnLayout -adjustableColumn true;
+    text -fn boldLabelFont -al "center"
+    -label "------------------------------------------------------------------------------------------";  
+    text -fn boldLabelFont -h 20 -al "center"
+    -label "BV Toolkit";  
+    text -fn boldLabelFont -al "center"
+    -label "------------------------------------------------------------------------------------------";  
+}
+
+proc tools(){    
+    frameLayout -label "Primitives" 
+            -bv 1 -mw 2 -mh 2 -bgc 0.2 0.2 0.2
+            -collapse false -collapsable true;
+            
+        columnLayout;
+            rowLayout -numberOfColumns 8 -h 80;
+            iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Cube" -image "polyCube.png"
+                        -command "PonC 0";
+            iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Cylinder" -image "polyCylinder.png"
+                        -command "PonC 1";
+            iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Sphere" -image "polySphere.png"
+                        -command "PonC 2";
+            iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Plane" -image "polyMesh.png"
+                        -command "PonC 3";
+            iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Torus" -image "polyTorus.png"
+                        -command "PonC 4";
+            iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Disc" -image "polyDisc.png"
+                        -command "PonC 5";
+
+            setParent..;
+            setParent..;
+                        
+            
+            separator -h 1 -style "in" -bgc 0.25 0.25 0.25;
+            columnLayout;
+                iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Sphere" -image "polySphere.png"
+                            -command FindObjectsWithNoUVShells;
+            
+            setParent..;
+            setParent..;
+                
+        setParent..;
+
+            
+    frameLayout -label "Renamer" 
+            -bv 1 -mw 2 -mh 2 -bgc 0.2 0.2 0.2
+            -collapse true -collapsable true;
+        columnLayout lay_col;
+                rowColumnLayout -nc 2 -cw 2 100 lay_rowCol;
+                
+                checkBox -l "Base Name:" -value 1 chk_baseName;
+                textField  -enable true fld_baseName;
+                
+                checkBox -l "Prefix:"  chk_prefix;
+                textField  -enable false fld_prefix;
+                
+                checkBox -l "Suffix:" chk_suffix;
+                textField -enable false suffixFld;
+                
+                setParent lay_col;
+                button -l "Rename Object"  -width 400 -height 25 btn_rename;
+                
+                button -e -c RenameUIQuery btn_rename;
+                string $baseEnable = "FieldEnabler chk_baseName fld_baseName";
+                string $prefEnable = "FieldEnabler chk_prefix fld_prefix";
+                string $prefValEnable = "FieldEnabler chk_removeFirst fld_removeFirst";
+                string $suffEnable = "FieldEnabler chk_suffix suffixFld";
+                string $suffValEnable = "FieldEnabler chk_removeLast fld_removeLast";
+                string $startStepEnable = "FieldEnabler chk_Numbered fld_startFrom; FieldEnabler chk_Numbered fld_stepNum";
+                checkBox -e -onc $baseEnable -ofc $baseEnable chk_baseName;
+                checkBox -e -onc $prefEnable -ofc $prefEnable chk_prefix;
+                checkBox -e -onc $suffEnable -ofc $suffEnable chk_suffix;
+                
+                columnLayout -adjustableColumn true;
+                text -h 30 -label "+ Rename Shader by Object";  
+                button -l "Rename SHD" -width 400 -height 40 -c RenameShadersByObject;
+                setParent ..; 
+
+            setParent ..;
+            setParent ..;
+        
+    frameLayout -label "Mesh Shading" 
+            -bv 1 -mw 2 -mh 2 -bgc 0.2 0.2 0.2
+            -collapse true -collapsable true;
+                        
+        gridLayout -columnsResizable true -numberOfColumns 2 -cellWidthHeight 50 20;
+            button -w 500 -h 100 -label "Hard" -command hardalledges;
+            button -w 500 -h 100 -label "Soft" -command softalledges;
+            setParent ..;
+            setParent ..;
+            
+    frameLayout -label "Mesher" 
+            -bv 1 -mw 2 -mh 2 -bgc 0.2 0.2 0.2
+            -collapse true -collapsable true;
+        
+        columnLayout -adj 1;
+
+                separator -height 3 -style "none";
+                rowLayout -numberOfColumns 2 -adj 2;
+                    iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "A to B" -image "snapTogetherTool.png"
+                                -command "AtoB";
+                    iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "B to A" -image "snapTogetherTool.png"
+                                -command "BtoA";
+                setParent ..;
+                
+                rowLayout -numberOfColumns 1 -adj 1;
+                    iconTextButton -style "iconAndTextHorizontal" -w 50 -h 50 -label "Smart Bevel" -image "polyBevel.png"
+                                -command "SmartBevel 0";
+                        popupMenu;            
+                            menuItem -l "Auto SG Befor" -c "SmartBevel 1";
+                setParent ..;
+                
+                rowLayout -numberOfColumns 1 -adj 1;
+                    iconTextButton -style "iconAndTextHorizontal" -w 50 -h 50 -label "To Center" -image "FreezeTransform.png"
+                                -command "ToCenter 0";
+                        popupMenu;            
+                            menuItem -l "Zero Pivot" -c "ZeroPivot";
+                            menuItem -l "History" -c "ToCenter 1";    
+                setParent ..;
+                
+                rowLayout -numberOfColumns 1 -adj 1;
+                    iconTextButton -style "iconAndTextHorizontal" -w 50 -h 50 -label "Instance" -image "polyMirrorGeometry.png"
+                                -command "instance";
+                        popupMenu;            
+                            menuItem -l "Delete Link" -c "ConvertInstanceToObject";
+                setParent ..;
+                
+                rowLayout -numberOfColumns 1 -adj 1;
+                    iconTextButton -style "iconAndTextHorizontal" -w 50 -h 50 -label "Fix N-Gons" -image "polyTriangulate.png"
+                                -command "FixNGons 0";
+                        popupMenu;            
+                            menuItem -l "Quad" -c "FixNGons 1";
+                setParent ..;
+                
+                rowLayout -numberOfColumns 1 -adj 1;
+                    iconTextButton -style "iconAndTextHorizontal" -w 50 -h 50 -label "Group" -image "group.png"
+                                -command "GroupName";
+                        popupMenu;            
+                            menuItem -l "Reference" -c "ReferenceMode";
+                setParent ..;
+                
+                rowLayout -numberOfColumns 1 -adj 1;
+                    iconTextButton -style "iconAndTextHorizontal" -w 50 -h 50 -label "Random\nRotation" -image "rotate_M.png"
+                                -command "RandomRotation(0)";
+                        popupMenu;            
+                            menuItem -l "X" -c "RandomRotation(1)";
+                            menuItem -l "Y" -c "RandomRotation(2)";
+                            menuItem -l "Z" -c "RandomRotation(3)";
+                
+                setParent..;
+                setParent ..; 
+            setParent ..; 
+            
+    
+    frameLayout -label "Boolean" 
+            -bv 1 -mw 2 -mh 2 -bgc 0.2 0.2 0.2
+            -collapse true -collapsable true;
+                        
+        rowColumnLayout  -numberOfColumns 3;
+                    iconTextButton -style "iconAndTextVertical" -w 100 -h 100 -label "Difference" -image "polyBooleansDifference.png"
+                                -command "BoolCommand 2 1 21";
+                    iconTextButton -style "iconAndTextVertical" -w 100 -h 100 -label "Union" -image "polyBooleansUnion.png"
+                                -command "BoolCommand 1 0 17";
+                    iconTextButton -style "iconAndTextVertical" -w 100 -h 100 -label "Intersection" -image "polyBooleansIntersection.png"
+                                -command "BoolCommand 3 0 18";
+                    iconTextButton -style "iconAndTextVertical" -w 100 -h 100 -label "Panel" -image "polyDuplicateFacet.png"
+                                -command "BoolPanel";
+                    iconTextButton -style "iconAndTextVertical" -w 100 -h 100 -label "Clean" -image "FreezeTransform.png"
+                                -command "CleanBool";
+                    iconTextButton -style "iconAndTextVertical" -w 100 -h 100 -label "Visibility" -image "WireFrame.png"
+                                -command "BoolVis";
+                setParent..;
+                setParent ..;
+        setParent ..;
+        
+    frameLayout -label "Array" 
+            -bv 1 -mw 2 -mh 2 -bgc 0.2 0.2 0.2
+            -collapse true -collapsable true;
+                        
+            string $form = `formLayout`;
+            string $tabs = `tabLayout -innerMarginWidth 5 -innerMarginHeight 5`;
+            formLayout -edit
+                -attachForm $tabs "top"    0
+                 -attachForm $tabs "left"   0
+                 -attachForm $tabs "bottom" 0
+                 -attachForm $tabs "right"  0
+                 $form;
+            
+            // Linear Array
+             string $child1 = `rowLayout -numberOfColumns 4 -adj 4`;                 
+                 columnLayout;
+                     button -label "Add Array" -w 300 -h 20 -c NewLinearArray; ; 
+                     separator -height 8 -style "none";
+                     intSliderGrp -l "Count " -v 1 -min 1 -max 30 -field true -fmn 1 -fmx 10000 -cw3 50 50 150 -cc "ArrayCount" -dc "ArrayCount" countSlider;
+                     separator -height 10 -style "none";
+                     floatSliderGrp -label "Offset X " -v 0 -min -100 -max 100 -field true -fmn -100000 -fmx 100000 -cw3 50 50 150 -cc "Offset X" -dc "Offset X" XSlider;
+                     popupMenu;
+                          menuItem -l "BB" -c "BBOffset 0";
+                     floatSliderGrp -label "Offset Y " -v 0 -min -100 -max 100 -field true -fmn -100000 -fmx 100000 -cw3 50 50 150 -cc "Offset Y" -dc "Offset Y" YSlider;
+                     popupMenu;
+                         menuItem -l "BB" -c "BBOffset 1";
+                     floatSliderGrp -label "Offset Z " -v 0 -min -100 -max 100 -field true -fmn -100000 -fmx 100000 -cw3 50 50 150 -cc "Offset Z" -dc "Offset Z" ZSlider;
+                     popupMenu;
+                         menuItem -l "BB" -c "BBOffset 2";
+                 setParent ..;
+                 
+                 columnLayout;
+                     separator -height 20 -style "none";
+                    separator -height 3 -style "none";
+                    button  -l "+" -c "SetCount(1); ArrayCount" -w 20 -h 20;
+                    separator -height 10 -style "none";
+                    button  -l "+" -c "SetOffset 5 X; Offset X" -w 20 -h 20;
+                    separator -height 3 -style "none";
+                    button  -l "+" -c "SetOffset 5 Y; Offset Y" -w 20 -h 20;
+                    separator -height 3 -style "none";
+                    button  -l "+" -c "SetOffset 5 Z; Offset Z" -w 20 -h 20;
+                setParent ..;
+                
+                columnLayout;
+                    separator -height 20 -style "none";
+                    separator -height 3 -style "none";
+                    button  -l "-" -c "SetCount(-1); ArrayCount" -w 20 -h 20;
+                    separator -height 10 -style "none";
+                    button  -l "-" -c "SetOffset -5 X; Offset X" -w 20 -h 20;
+                    separator -height 3 -style "none";
+                    button  -l "-" -c "SetOffset -5 Y; Offset Y" -w 20 -h 20;
+                    separator -height 3 -style "none";
+                    button  -l "-" -c "SetOffset -5 Z; Offset Z" -w 20 -h 20;
+                setParent ..;
+                
+                columnLayout  -adj 1;
+                    separator -height 20 -style "none";
+                    iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Combine" -image "polyUnite.png"
+                                -command "CombineArrayL 0";
+                        popupMenu;
+                            menuItem -l "Merge" -c "CombineArrayL 1";
+                    separator -height 5 -style "none";
+                    iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Update" -image "FreezeTransform.png"
+                                -command "UpdateLinear";
+                        popupMenu;
+                            menuItem -l "Dynamic" -c "DynamicArray";
+                            menuItem -l "Edit" -c "EditArray";
+                            menuItem -l "Remove" -c "RemoveArray";
+                            menuItem -l "New" -c "NewLinearArray";
+                setParent ..;
+            
+    
+             setParent ..;
+        
+        
+            // Radial Array
+             string $child2 = `rowColumnLayout -numberOfColumns 4`;
+                 columnLayout;
+                     button -label "Add Array" -w 300 -h 20 -c NewArray; ; 
+                     separator -height 8 -style "none";
+                     intSliderGrp -l "Count " -v 8 -min 1 -max 30 -field true -fmn 1 -fmx 10000 -cw3 40 50 160 -cc "ArrayCount" -dc "ArrayCount" CountSlider;
+                     separator -height 10 -style "none";
+                     intSliderGrp -label "Radius " -v 25 -min 0 -max 50 -field true -fmn -100000 -fmx 100000 -cw3 40 50 160 -cc "ArrayRadius" -dc "ArrayRadius" RadiusSlider;
+                     separator -height 10 -style "none";
+                     floatSliderGrp -label "Size " -v 10 -min 0 -max 30 -field true -fmn 1 -fmx 100000 -pre 2 -cw3 40 50 160 -cc "ArraySize" -dc "ArraySize" SizeSlider;
+                 setParent ..;
+                 
+                 columnLayout;    
+                     separator -height 30 -style "none";
+                    button  -l "+" -c "SetVal 1 CountSlider; ArrayCount" -w 20 -h 20;
+                    separator -height 10 -style "none";
+                    button  -l "+" -c "SetVal 10 RadiusSlider; ArrayRadius" -w 20 -h 20;
+                    separator -height 10 -style "none";
+                    button  -l "+" -c "SetValSize 1; ArraySize" -w 20 -h 20;
+                setParent ..;
+                
+                columnLayout; 
+                    separator -height 30 -style "none";       
+                    button  -l "-" -c "SetVal -1 CountSlider; ArrayCount" -w 20 -h 20;
+                    separator -height 10 -style "none";
+                    button  -l "-" -c "SetVal -10 RadiusSlider; ArrayRadius" -w 20 -h 20;
+                    separator -height 10 -style "none";
+                    button  -l "-" -c "SetValSize -1; ArraySize" -w 20 -h 20;
+                setParent ..;
+                
+                columnLayout  -adj 1;
+                    separator -height 20 -style "none";
+                    iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Combine" -image "polyUnite.png"
+                                -command "CombineArray";        
+                    separator -height 5 -style "none";
+                    iconTextButton -style "iconAndTextVertical" -w 50 -h 50 -label "Update" -image "FreezeTransform.png"
+                                -command "UpdateRadial";
+                        popupMenu;            
+                            menuItem -l "Edit" -c "EditArray";
+                            menuItem -l "Remove" -c "RemoveArray";
+                            menuItem -l "New" -c "NewArray";
+                setParent ..;
+                            
+    
+             setParent ..;
+        
+             tabLayout -edit
+                 -tabLabel $child1 "Array Linear" -tabLabel $child2 "Array Radial"
+                 $tabs;
+            setParent ..;
+            setParent ..;
+        setParent ..;
+        
+    frameLayout -label "ToolS" 
+            -bv 1 -mw 2 -mh 2 -bgc 0.2 0.2 0.2
+            -collapse true -collapsable true;
+            
+            // Mirror Command
+            global int $mirrorMode = 1;
+                columnLayout -adj 1;
+                    frameLayout -label "Mirror" -cll 1 -cc "winTabCollaps 68" -ec "winTabCollaps (-68)";
+                    rowLayout -numberOfColumns 2 -adj 1;        
+                        radioCollection;                   
+                            radioButton -label "Object" -select -onc "$mirrorMode = 1";
+                            radioButton -label "World" -onc "$mirrorMode = 2";
+                    setParent ..; setParent ..;
+                    
+                    rowLayout -numberOfColumns 3;
+                        iconTextButton -w 40 -h 40 -image "ToolS_icons/ToolS_X.png"
+                            -command "mirrorCommand(0)";
+                        iconTextButton -w 40 -h 40 -image "ToolS_icons/ToolS_Y.png"
+                            -command "mirrorCommand(1)";
+                        iconTextButton -w 40 -h 40 -image "ToolS_icons/ToolS_Z.png"
+                            -command "mirrorCommand(2)";                        
+                    setParent ..; setParent ..;  
+                    
+                    columnLayout -adj 1;
+                        frameLayout -label "Select" -cll 1 -cc "winTabCollaps 130" -ec "winTabCollaps (-130)";
+                        rowLayout -numberOfColumns 2 -adj 3;
+                            iconTextButton  -style "iconAndTextVertical" -w 60 -h 60 -label "N-Gons" -image "polyCreateFacet.png"
+                                -command "nGons";
+                            iconTextButton  -style "iconAndTextVertical" -w 60 -h 60 -label "Tris" -image "polyTriangulate.png"
+                                -command "tris";
+                        setParent ..;
+                        rowLayout -numberOfColumns 2 -adj 3;
+                            iconTextButton  -style "iconAndTextVertical" -w 60 -h 60 -label "Hard Edges" -image "polyHardEdge.png"
+                                -command "hardEdges";
+                            iconTextButton  -style "iconAndTextVertical" -w 60 -h 60 -label "by Mat" -image "polyChipOff.png"
+                                -command "selectByMat";
+                        setParent ..; setParent ..;  
+                    setParent ..;  
+                    
+                    columnLayout -adj 1;    
+                        frameLayout -label "Material" -cll 1 -cc "winTabCollaps 124" -ec "winTabCollaps (-124)";
+                        rowLayout -numberOfColumns 2 -adj 1;
+                        button -label "Get" -w 60 -h 30
+                            -command "matCommand(0)";
+                        button -label "Set" -w 60 -h 30
+                            -command "matCommand(1)";
+                        setParent ..;
+                            
+                        rowLayout -numberOfColumns 3 -adj 3;
+                            $colorSel = `colorSliderGrp -columnWidth2 20 0
+                                -rgb 0.5 0.5 0.5
+                                -cc "matColorCommand()"`;
+                                
+                            iconTextButton  -style "iconAndTextVertical" -label "Blinn" -image "render_blinn.png"
+                                -command "newMatCommand blinn";
+                            iconTextButton  -style "iconAndTextVertical" -label "Lambert" -image "render_lambert.png"
+                                -command "newMatCommand lambert";
+                        setParent ..;
+                        
+                        rowLayout -numberOfColumns 1;
+                            $TextFieldMatName = `textFieldGrp -changeCommand "newMatNameCommand()"
+                                    -label "Name:"                                
+                                    -columnWidth 1 35
+                                    -columnWidth 2 80`;
+                        setParent ..; 
+                    setParent ..; setParent ..;                        
+            setParent ..; 
+               
+}
+
+proc getkentool() {
+    columnLayout -adjustableColumn true;
+    text -h 50 -label "";  
+    button -h 50 -label "Ken Tool" -c "kentool_lt";
+    setParent ..; 
+
+}
+
+//#############################
+//Function Mesher
+//#############################
+global proc ToCenter(int $mode) {
+    if (size(`ls -sl`) > 0) {
+        move -rpr 0 0 0;
+        makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;
+        if ($mode == 1) {DeleteHistory;}
+    }
+    if (size(`ls -sl`) == 0) {print "No selected objects";}
+}
+
+global proc AtoB() {
+    if (size(`ls -sl`) > 0) {
+        string $SelFirst[] = `ls -sl`;
+        string $LastSel[] = `ls -sl -tl 1`;
+        float $FirstLoc[] = `xform -q -ws -bb $LastSel`;
+        
+        float $LocX = ($FirstLoc[0] + $FirstLoc[3]) /2;
+        float $LocY = ($FirstLoc[1] + $FirstLoc[4]) /2;
+        float $LocZ = ($FirstLoc[2] + $FirstLoc[5]) /2;
+        
+        select -d $LastSel;
+        move -rpr $LocX $LocY $LocZ;
+        select -r (`ls -sl`);
+    }
+    if (size(`ls -sl`) == 0) {print "No selected components";}
+}
+
+global proc BtoA() {
+    if (size(`ls -sl`) > 0) {
+        string $SelFirst[] = `ls -sl`;
+        float $FirstLoc[] = `xform -q -ws -bb $SelFirst[0]`;
+        
+        float $LocX = ($FirstLoc[0] + $FirstLoc[3]) /2;
+        float $LocY = ($FirstLoc[1] + $FirstLoc[4]) /2;
+        float $LocZ = ($FirstLoc[2] + $FirstLoc[5]) /2;
+        
+        select -d $SelFirst[0];
+        move -rpr $LocX $LocY $LocZ;
+        select -r (`ls -sl`);
+    }
+    if (size(`ls -sl`) == 0) {print "No selected components";}
+}
+
+global proc ZeroPivot() {
+    if (size(`ls -sl`) > 0) {xform -ws -piv 0 0 0;}
+    if (size(`ls -sl`) == 0) {print "No selected objects";}
+}
+
+global proc SmartBevel(int $mode) {
+    if ($mode == 1) {PolygonSoftenHarden;}
+    selectMode -component;
+    selectType -edge true;
+    polySelectConstraint -m 3 -t 0x8000 -sm 1;
+    polySelectConstraint -dis;
+    if(size(`ls -sl -fl`)>0) {BevelPolygon;}
+    if(size(`ls -sl -fl`)==0) {
+        print "No Hard Edges";        
+    }
+    selectMode -o;
+}
+
+global proc FixNGons(int $mode) {
+    selectMode -component;
+    selectType -facet true;
+    polySelectConstraint -m 3 -t 0x0008 -sz 3;
+    polySelectConstraint -dis;
+    int $NGonsCount = size(`ls -sl`);
+    
+    if ($NGonsCount > 0) {
+        polyTriangulate -ch 1;
+            if ($mode == 1) {polyQuad -a 30 -kgb 1 -ktb 1 -khe 1 -ws 1 -ch 1;}
+            print ("Fixed " + $NGonsCount + " N-Gons");
+    }
+    if ($NGonsCount == 0) {print "No N-Gons";}
+    selectMode -o;
+}
+
+global proc RandomRotation(int $mode) {
+    string $SelObj[] = `ls -sl`;
+    for ($i=0; $i<size($SelObj); ++$i) {
+        if ($mode == 0) {rotate -r -ws -fo (`rand -360 360`) (`rand -360 360`) (`rand -360 360`) $SelObj[$i];}
+        if ($mode == 1) {rotate -r -ws -fo (`rand -360 360`) 0 0 $SelObj[$i];}
+        if ($mode == 2) {rotate -r -ws -fo 0 (`rand -360 360`) 0 $SelObj[$i];}
+        if ($mode == 3) {rotate -r -ws -fo 0 0 (`rand -360 360`) $SelObj[$i];}
+    }
+}
+
+global proc GroupName() {
+//Window
+    if (`window -exists GroupNWindow`) {
+        deleteUI GroupNWindow;
+    }
+    
+    window -title "Name" -tlb 1 -s 0 GroupNWindow;
+    window -e -wh 167 64 GroupNWindow;
+    showWindow GroupNWindow;
+//Window
+
+//UI
+columnLayout -adj 1;
+    textFieldGrp -columnWidth 1 163 -h 25 -cc "MakeGroup" GroupNField;
+    rowLayout -nc 2;
+        button -label "Cancel" -w 80 -h 35 -c "deleteUI GroupNWindow";
+        button -label "OK" -w 80 -h 35 -c "MakeGroup";
+    setParent ..;
+setParent ..;
+setFocus GroupNField;
+//UI
+}
+
+global proc MakeGroup() {
+    string $GroupName = `textFieldGrp -q -text GroupNField`;    
+    group -n $GroupName;
+    deleteUI GroupNWindow;
+}
+
+global proc ReferenceMode() {
+    string $SelObj[] = `ls -sl`;
+    for ($i=0; $i<size($SelObj); ++$i) {
+        int $ChekMode = `getAttr ($SelObj[$i]+".overrideDisplayType")`;
+        if ($ChekMode==0) {
+            setAttr ($SelObj[$i]+".overrideEnabled") 1;
+            setAttr ($SelObj[$i]+".overrideDisplayType") 2;
+            select -cl;
+        }    
+        if ($ChekMode==2) {
+            setAttr ($SelObj[$i]+".overrideEnabled") 0;
+            setAttr ($SelObj[$i]+".overrideDisplayType") 0;
+        }
+    }
+}
+// ##############################################################################################################
+
+
+//#############################
+//Boolean Function
+//#############################
+global proc BoolCommand(int $boolMode, int $boolData, int $wireColor) {
+    string $selObj[] = `ls -sl`;        
+    int $selCount = size(`ls -sl`);
+    polyCBoolOp -op $boolMode -ch 1 -preserveColor 0 -classification 1 -name "newBoolResult1";
+            
+    for($i = $boolData; $i < $selCount; $i++) {
+        string $ObjShape[] = `ls -dag $selObj[$i]`;
+        setAttr ($ObjShape[2] + ".intermediateObject") 0;
+        setAttr ($ObjShape[1] + ".visibility") 1;
+        setAttr ($ObjShape[2] + ".overrideEnabled") 1;
+        setAttr ($ObjShape[2] + ".overrideShading") 0;        
+        setAttr ($ObjShape[2] + ".overrideColor") $wireColor;
+        rename $ObjShape[1] ("BoolComponent" + $i);
+    }       
+}
+
+global proc BoolPanel() {
+    string $firstObj[] = `ls -sl`;
+    string $copyObj[] = `duplicate -rr -n ($firstObj[0] + "Copy") $firstObj[0]`;
+    select $firstObj;
+    BoolCommand (2, 1, 16);
+    select $firstObj;
+    select -d $firstObj[0];
+    pickWalk -d down;
+    select -tgl $copyObj;     
+    BoolCommand (3, 0, 16);
+}
+
+//Clean
+global proc CleanBool() {
+    DeleteHistory;
+    select -d "newBoolResult*";
+    pickWalk -d up;
+    delete;   
+}
+
+//Vis
+global proc BoolVis() {
+    int $selCount = size(`ls -sl`);
+    if ($selCount > 0) {
+    select -d "newBoolResult*";
+    hide;
+    }
+    
+    if ($selCount == 0) {
+        select -r "BoolComponent*";
+        showHidden;
+        select -cl;
+    }
+   
+}
+
+// ##############################################################################################################
+
+//#############################
+// PonC Function
+//#############################
+global proc PonC(int $Primitive) {
+    int $SelSize = size(`ls -sl -fl`);
+    
+    if ($SelSize > 0) {        
+        string $SelFirst[] = `ls -sl`;
+        float $FirstLoc[] = `xform -q -ws -bb $SelFirst[0]`;
+                
+        float $LocX = ($FirstLoc[0] + $FirstLoc[3]) /2;
+        float $LocY = ($FirstLoc[1] + $FirstLoc[4]) /2;
+        float $LocZ = ($FirstLoc[2] + $FirstLoc[5]) /2;
+        
+        if ($Primitive == 0) {CreatePolygonCube;}
+        if ($Primitive == 1) {CreatePolygonCylinder;}
+        if ($Primitive == 2) {CreatePolygonSphere;}
+        if ($Primitive == 3) {CreatePolygonPlane;}
+        if ($Primitive == 4) {CreatePolygonTorus;}
+        if ($Primitive == 5) {CreatePolygonDisc;}
+    
+        move -rpr $LocX $LocY $LocZ;
+        FreezeTransformations;
+    }
+    
+    if ($SelSize == 0) {
+        if ($Primitive == 0) {CreatePolygonCube;}
+        if ($Primitive == 1) {CreatePolygonCylinder;}
+        if ($Primitive == 2) {CreatePolygonSphere;}
+        if ($Primitive == 3) {CreatePolygonPlane;}
+        if ($Primitive == 4) {CreatePolygonTorus;}
+        if ($Primitive == 5) {CreatePolygonDisc;}
+    }
+}
+
+
+// ##############################################################################################################
+
+//#############################
+// Cleanup Function
+//#############################
+global proc cleanup_reset(){
+	DeleteHistory;
+	FreezeTransformations;
+	ResetTransformations;
+	
+	HypershadeWindow;
+    hyperShadePanelBuildEditMenu hyperShadePanel1 hyperShadePanelMenuEditMenu;
+    hyperShadePanelMenuCommand("hyperShadePanel1", "deleteUnusedNodes");
+}
+
+
+
+
+
+
+//#############################
+// Other Function
+//#############################
+global proc centerToView ()
+{
+
+string $selection[] = `ls -sl`;
+string $item;
+
+if ( size ($selection) == 0 )
+	{
+	confirmDialog -t "Oops..." -m "Nothing is selected." -b Continue;
+	return;
+	}
+
+	for ($item in $selection)
+	{
+	float $position[] = `autoPlace`;
+    move $position[0] $position[1] $position[2] $item;
+	}
+}
+
+global proc toggleWOS()
+{
+	string $myWindow = `getPanel -withFocus`;
+	{
+		int $wostoggle = `modelEditor -q -wos $myWindow`;
+		switch ($wostoggle)
+		{
+			case 0: modelEditor -e -wos true $myWindow;
+				break;
+			case 1: modelEditor -e -wos false $myWindow;
+				break;
+			default: break;
+		}
+	}
+}
+
+global proc toggleXRay()
+{
+	string $myWindow = `getPanel -withFocus`;
+	{
+		int $xraytoggle = `modelEditor -q -xray $myWindow`;
+		switch ($xraytoggle)
+		{
+			case 0: modelEditor -e -xray true $myWindow;
+				break;
+			case 1: modelEditor -e -xray false $myWindow;
+				break;
+			default: break;
+		}
+	}
+}
+
+
+global proc toggleLocators()
+{
+	string $myWindow = `getPanel -withFocus`;
+	{
+		int $loctoggle = `modelEditor -q -locators $myWindow`;
+		switch ($loctoggle)
+		{
+			case 0: modelEditor -e -locators true $myWindow;
+				break;
+			case 1: modelEditor -e -locators false $myWindow;
+				break;
+			default: break;
+		}
+	}
+}
+
+
+global proc toggleVIS ()
+{
+	string $selection[] = `ls -sl`;
+	string $item;
+
+	for ($item in $selection)
+	{
+		setAttr ($item + ".visibility") (!`getAttr ($item + ".visibility")`);
+	}
+}
+
+//####################################
+// Hard / Soft Edges Selected Objects
+//####################################
+global proc hardalledges ()
+{
+    // HardenAllEdges
+    // Makes every edge of every polygon object have hard polygonal normal shading
+    string $temp;
+    int $edges[];
+    string $shapes[] = `ls -exactType transform`;
+    for ($temp in $shapes)
+    {
+        print ($temp + " -> ");
+        if ($temp != "persp" &&
+            $temp != "front" &&
+            $temp != "side" &&
+            $temp != "top")
+        {
+            $edges = `polyEvaluate -edge $temp`;
+            print ($edges);
+            polySoftEdge -ch 1 -a 0 ($temp + ".e[0:" + $edges[0] + "]");
+        }
+        else print "none"; }
+}
+
+global proc softalledges ()
+{
+    // SoftenAllEdges
+    // Makes every edge of every polygon object have soft normal shading
+    string $temp;
+    int $edges[];
+    string $shapes[] = `ls -exactType transform`;
+    for ($temp in $shapes)
+    {
+        print ($temp + " -> ");
+        if ($temp != "persp" &&
+            $temp != "front" &&
+            $temp != "side" &&
+            $temp != "top")
+        {
+            $edges = `polyEvaluate -edge $temp`;
+            print ($edges);
+            polySoftEdge -ch 1 -a 180 ($temp + ".e[0:" + $edges[0] + "]");
+        }
+        else print "none"; }
+
+}
+
+
+
+
+//####################################
+// Renamer
+//####################################
+
+global proc Renamer (string $incNodes[], string $incBaseName, 
+string $incPrefix, string $incSuffix){
+	string $tmpName = "";
+	if(size($incNodes)>0){
+		for ($i = 0; $i < size($incNodes); ++$i){		
+			$tmpName = "";	
+			if($incBaseName != 0 && $incBaseName != "")		
+				$tmpName = $incBaseName;
+			else
+				$tmpName = $incNodes[$i];		
+
+			if($incPrefix != 0)				
+				$tmpName = $incPrefix + $tmpName;
+					
+				
+			if($incSuffix != 0)	
+				$tmpName = $tmpName + $incSuffix;
+				
+			rename $incNodes[$i] ($tmpName);	
+			}
+		}
+	}
+
+global proc string FieldQuery (string $incChkBox, string $incField){
+	string $valReturn;
+	if(`isValidUiName $incChkBox`){
+		int $check = `checkBox -q -value $incChkBox`;
+		if($check>0){
+			if(`isValidUiName $incField`){
+				if(`textField -exists $incField`)
+					$valReturn = `textField -q -text $incField`;
+				if(`intField -exists $incField`)
+					$valReturn = `intField -q -value $incField`;
+				}
+			}
+		else $valReturn = 0;	
+		}
+	return $valReturn;
+	}
+
+
+global proc FieldEnabler (string $incChkBox, string $incField){
+	if(`isValidUiName $incChkBox`){
+		int $check = `checkBox -q -value $incChkBox`;
+		if($check>0){
+			if(`isValidUiName $incField`){
+				if(`textField -exists $incField`)
+					$valReturn = `textField -e -text "" -enable true $incField`;
+				if(`intField -exists $incField`)
+					$valReturn = `intField -e -value 1 -enable true $incField`;
+				setFocus $incField;	
+				}
+			}	
+		else{
+			if(`isValidUiName $incField`){
+				if(`textField -exists $incField`)
+					$valReturn = `textField -e -text "" -enable false $incField`;
+				if(`intField -exists $incField`)
+					$valReturn = `intField -e -value 0 -enable false $incField`;
+				}
+			}
+		}
+	}
+	
+
+global proc RenameUIQuery (){
+	string $selection[] = `ls -sl`;
+	string $baseName = `FieldQuery chk_baseName fld_baseName`; 
+	string $prefix = `FieldQuery chk_prefix fld_prefix`;
+	string $suffix =`FieldQuery chk_suffix suffixFld`;
+	Renamer $selection $baseName $prefix $suffix;
+	}
+
+//####################################
+// Rename Shader By Object
+//####################################
+proc string getSurfaceShader (string $objName)
+{
+  string $myShapeNode[] = `listRelatives -children -shapes $objName`;
+  string $mySGs[] = `listConnections -type shadingEngine $myShapeNode[0]`;
+  string $surfaceShader[] = `listConnections ($mySGs[0] + ".surfaceShader")`;
+  return $surfaceShader[0];
+}
+
+global proc RenameShadersByObject()
+{
+    string $meshObjects[] = listRelatives("-f","-p",ls("-type","mesh","-l","-ni"));
+    
+    string $_meshObjects[];
+    clear($_meshObjects);
+    for ($se in $meshObjects)
+    $_meshObjects[size($_meshObjects)] = `substring $se 2 (size($se))`;
+    //print $_meshObjects;
+    
+    for($obj_ in $_meshObjects)
+    {
+       // print ($obj_);
+       $a=getSurfaceShader($obj_);
+       
+       if (catchQuiet(rename($a,($obj_+"_Shader"))))
+         {print ("error : cannot rename:"+$a+" for "+$obj_+"\n");}
+       else
+         {print ($a+":ok-\n");}
+    }
+
+}
+
+//####################################
+// ToolS
+//####################################
+//Mirror
+global proc mirrorCommand(int $mirrorAxis) {                       
+    global int $mirrorMode;
+    polyMirrorFace -cutMesh 0 -axis $mirrorAxis -mirrorAxis $mirrorMode -mirrorPosition 0 -mergeMode 1 -mergeThresholdType 1 -mergeThreshold 0.1;
+}
+
+//Flip
+global proc flipCommand (int $flipAxis) {
+    global int $flipMode;
+    if ($flipMode == 0) 
+    {
+        if ($flipAxis == 0) {scale -r -1 1 1;}
+        if ($flipAxis == 1) {scale -r 1 -1 1;}
+        if ($flipAxis == 2) {scale -r 1 1 -1;}
+    }
+    
+    if ($flipMode == 1) 
+    {
+        if ($flipAxis == 0) {scale -r -1 1 1 -pivot 0 0 0;}
+        if ($flipAxis == 1) {scale -r 1 -1 1 -pivot 0 0 0;}
+        if ($flipAxis == 2) {scale -r 1 1 -1 -pivot 0 0 0;}
+    }
+}
+
+//Select
+global proc hardEdges() {
+    selectMode -component;
+    selectType -edge true;
+    polySelectConstraint -m 3 -t 0x8000 -sm 1;
+    polySelectConstraint -dis;
+}
+
+global proc nGons() {
+    selectMode -component;
+    selectType -facet true;
+    polySelectConstraint -m 3 -t 0x0008 -sz 3;
+    polySelectConstraint -dis;
+    print ("Selected N-Gons: " + size(`ls -sl -fl`));
+}
+
+global proc tris() {
+    selectMode -component;
+    selectType -facet true;
+    polySelectConstraint -m 3 -t 0x0008 -sz 1;
+    polySelectConstraint -dis;
+    print ("Selected Tris: " + size(`ls -sl -fl`));
+}
+
+global proc selectByMat() {
+    hyperShade -smn;
+    string $matSel[] = `ls -sl`;
+    select -cl;
+    
+    SelectAll;
+    string $origSelObj[] = `ls -sl -o`;
+    
+    hyperShade -o $matSel[0];
+    
+    select $origSelObj;
+    selectMode -component;
+    selectType -facet true;
+}
+
+//Material
+//Get, Set
+global proc matCommand (int $matMode) {
+    global string $matSel[];
+     
+    if ($matMode == 0) {        
+        string $origSel[] = `ls -sl`;
+        hyperShade -smn;
+        $matSel = `ls -sl`;
+        select -cl;
+        select $origSel;        
+        print ("Get Material: " + $matSel[0]);
+    }
+    
+    if ($matMode == 1) {        
+        hyperShade -assign $matSel[0];
+        print ("Set Material: " + $matSel[0]);
+    }
+}
+
+//Get, Set
+
+//Creat Material
+
+global string $TextFieldMatName;
+global string $MatName;
+$MatName = "NewMaterial";
+
+global proc newMatNameCommand() {
+    global string $TextFieldMatName;
+    global string $MatName;
+    $MatName = `textFieldGrp -q -text $TextFieldMatName`;    
+}
+
+global float $matColorRGB[];
+$matColorRGB[0] = 0.5;
+$matColorRGB[1] = 0.5;
+$matColorRGB[2] = 0.5;
+global string $colorSel;
+
+global proc matColorCommand() {
+    global float $matColorRGB[];
+    global string $colorSel;
+    $matColorRGB = `colorSliderGrp -q -rgb $colorSel`;    
+}
+
+global string $MatName;
+global proc newMatCommand(string $shaderType) {
+    global string $MatName;
+    global float $matColorRGB[];    
+        string $origSelEl[] = `ls -sl`;
+        string $matNode = `shadingNode -asShader $shaderType -n $MatName`;
+        string $SG = `sets -renderable true -noSurfaceShader true -empty -name ($matNode + "SG")`;
+        connectAttr -f ($matNode+".outColor") ($SG+".surfaceShader");       
+        setAttr ($matNode+".color") -type double3 $matColorRGB[0] $matColorRGB[1] $matColorRGB[2];
+        select $origSelEl;        
+        hyperShade -assign $matNode;
+        print ("Creat Material: " + $matNode);
+}
+
+
+
+//####################################
+// Linear Array
+//####################################
+//New Array
+global proc NewLinearArray() {
+    floatSliderGrp -e -v 0 XSlider;
+    floatSliderGrp -e -v 0 YSlider;
+    floatSliderGrp -e -v 0 ZSlider;    
+    intSliderGrp -e -v 1 countSlider;
+    
+    global string $curSelObj[];
+    $curSelObj = `ls -sl`;
+    group -w -n "NewArrayGroup1";
+}
+//New Array
+
+//Count
+global proc ArrayCount () {
+    global string $curSelObj[];
+    pickWalk -d up;
+    string $ArrayGroup[] = `ls -sl`;
+    
+    int $sliderValue = `intSliderGrp -q -v countSlider`;
+    int $selCount = size (`listRelatives -c $ArrayGroup`);
+    
+    select (`listRelatives -c $ArrayGroup`);
+    select (`ls -sl -tl 1`);
+    
+    if ($sliderValue > $selCount) {
+        int $newCount = $sliderValue - $selCount;
+        
+        int $sliderX = `floatSliderGrp -q -v XSlider`;
+        int $sliderY = `floatSliderGrp -q -v YSlider`;
+        int $sliderZ = `floatSliderGrp -q -v ZSlider`;
+        
+        for ($i=0; $i<$newCount; ++$i) {
+        instance;
+        move -r $sliderX $sliderY $sliderZ;
+        }
+    }
+    
+    if ($sliderValue < $selCount) {
+        int $newCountDel = $selCount - $sliderValue;
+        
+        
+        for ($i=0; $i<$newCountDel; ++$i) {
+            select (`listRelatives -c $ArrayGroup`);
+            delete (`ls -sl -tl 1`);
+        }
+        
+    }    
+    Offset X;
+    Offset Y;
+    Offset Z;
+}
+//Count
+
+//Offset
+global proc Offset(string $axis) {
+    pickWalk -d up;        
+    string $sel[] = `listRelatives -c`;
+    
+    int $itemA = 0;
+    int $itemB = -1;
+    float $sliderValue = `floatSliderGrp -q -v ($axis + "Slider")`;
+    
+    for ($i=0; $i<size(`listRelatives -c`)-1; ++$i) {
+        $itemA = $itemA + 1;    
+        $itemB = $itemB + 1;
+                                           
+        float $newLoc = `getAttr ($sel[$itemB] + ".translate" + $axis)`;
+        $newLoc = $newLoc+$sliderValue;
+        setAttr ($sel[$itemA] + ".translate" + $axis) $newLoc;
+        }
+        pickWalk -d up;
+}
+//Offset
+
+//Combine Array
+global proc CombineArrayL(int $MergeType) {
+    pickWalk -d up;
+    string $selGroup[] = `ls -sl`;
+    polyUnite -ch 1 -mergeUVSets 1 -centerPivot -name (`ls -sl`) (`listRelatives -c`);    
+    
+    if ($MergeType == 1) {
+        string $SelObj[] = `ls -sl`;
+        polyMergeVertex -d 0.01 -am 1 -ch 1;
+        select -r $SelObj;
+    }    
+    
+    DeleteHistory;
+    delete $selGroup;
+    rename "NewArray1";
+    print "Combine Done";
+}
+//Combine Array
+
+//Set Value
+
+global proc SetCount(int $addCountVal) {
+    int $oldVal = `intSliderGrp -q -v countSlider`;
+    intSliderGrp -e -v ($oldVal + $addCountVal) countSlider;
+}
+
+global proc SetOffset(int $addOffsetVal, string $axisSet) {
+    int $oldVal = `floatSliderGrp -q -v ($axisSet + "Slider")`;
+    floatSliderGrp -e -v ($oldVal + $addOffsetVal) ($axisSet + "Slider");
+}
+
+//Set Value
+
+//Update Data
+global proc UpdateLinear() {
+    pickWalk -d up;
+    string $arrayItemGroup[] = `listRelatives -c`;
+    float $updateX = `getAttr ($arrayItemGroup[1] + ".translateX")` - `getAttr ($arrayItemGroup[0] + ".translateX")`;
+    float $updateY = `getAttr ($arrayItemGroup[1] + ".translateY")` - `getAttr ($arrayItemGroup[0] + ".translateY")`;
+    float $updateZ = `getAttr ($arrayItemGroup[1] + ".translateZ")` - `getAttr ($arrayItemGroup[0] + ".translateZ")`;
+    
+    floatSliderGrp -e -v $updateX XSlider;
+    floatSliderGrp -e -v $updateY YSlider;
+    floatSliderGrp -e -v $updateZ ZSlider;
+    
+    intSliderGrp -e -v (size(`listRelatives -c`)) countSlider;
+}
+//Update Data
+
+//Dynamic Array
+global proc DynamicArray() {
+    pickWalk -d up;
+    string $arrayList[] = `listRelatives -c`;
+    int $arraySize = size($arrayList);
+    float $lastNum = size($arrayList)-1;
+    string $LastObj = $arrayList[$arraySize-1];
+    
+    float $LocX = `getAttr ($LastObj+".translateX")`-`getAttr ($arrayList[0]+".translateX")`;   
+    float $newLocX = ($LocX/$lastNum);
+    floatSliderGrp -e -pre 5 -v $newLocX XSlider;
+    Offset X;
+    
+    float $LocY = `getAttr ($LastObj+".translateY")`-`getAttr ($arrayList[0]+".translateY")`;   
+    float $newLocY = ($LocY/$lastNum);
+    floatSliderGrp -e -pre 5 -v $newLocY YSlider;
+    Offset Y;
+    
+    float $LocZ = `getAttr ($LastObj+".translateZ")`-`getAttr ($arrayList[0]+".translateZ")`;   
+    float $newLocZ = ($LocZ/$lastNum);
+    floatSliderGrp -e -pre 5 -v $newLocZ ZSlider;
+    Offset Z;
+        
+    float $PivotPos[] = `xform -q -ws -sp $arrayList[0]`;
+    xform -ws -piv $PivotPos[0] $PivotPos[1] $PivotPos[2];
+}
+//Dynamic Array
+
+//EditArray
+global proc EditArray() {
+    pickWalk -d up;
+    string $ArrayList[] = `listRelatives -c`;
+    select -r $ArrayList[0];
+    selectMode -co;
+}
+//EditArray
+
+//Remove Array
+global proc RemoveArray() {
+    pickWalk -d up;
+    string $ArrayGr[] = `ls -sl`;
+    select -r (`listRelatives -c`);
+    parent -world (`ls -sl -hd 1`);
+    delete $ArrayGr;
+    
+    float $pivLoc[] = `xform -q -ws -sp`;
+    CenterPivot;
+    move -rpr $pivLoc[0] $pivLoc[1] $pivLoc[2];
+}
+//Remove Array
+
+//BB
+global proc BBOffset(int $OffsetAxis) {
+    pickWalk -d up;
+    string $ArrayList[] = `listRelatives -c`;
+    
+    float $BBData[] = `xform -q -bb $ArrayList[0]`;
+    float $BBScaleX = $BBData[3]-$BBData[0];
+    float $BBScaleY = $BBData[4]-$BBData[1];
+    float $BBScaleZ = $BBData[5]-$BBData[2];
+    
+    if ($OffsetAxis==0) {floatSliderGrp -e -pre 5 -v $BBScaleX XSlider;}
+    if ($OffsetAxis==1) {floatSliderGrp -e -pre 5 -v $BBScaleY YSlider;}
+    if ($OffsetAxis==2) {floatSliderGrp -e -pre 5 -v $BBScaleZ ZSlider;}
+    
+    Offset X;
+    Offset Y;
+    Offset Z;
+}
+
+//####################################
+// Radial Array
+//####################################
+
+//####################################
+// Find Object With no UV Shells
+//####################################
+global proc FindObjectsWithNoUVShells()
+{
+   string $ObjectsWithNoUVShells[];
+   clear($ObjectsWithNoUVShells);
+   $OldSel=`ls -type "mesh"`;
+   
+   for($e in $OldSel)
+   {
+     select $e;
+     
+     $shell_count=`polyEvaluate -uvShell`;
+     if($shell_count[0]==0)
+     {
+     $sz=size($ObjectsWithNoUVShells);
+     $ObjectsWithNoUVShells[$sz]=$e;
+     }
+   }
+   
+   select -cl;
+   select $ObjectsWithNoUVShells; 
+}
+
+bvtools;
